@@ -7,7 +7,7 @@ import PackageDescription
 let package = Package(
     name: "RequestModelMacro",
     platforms: [
-      .macOS(.v10_15)
+        .macOS(.v10_15)
     ],
     products: [
         .library(
@@ -23,7 +23,7 @@ let package = Package(
         .package(
             url: "https://github.com/apple/swift-syntax",
             revision: "release/6.0.0"
-        ),
+        )
     ],
     targets: [
         .target(

@@ -10,13 +10,25 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
-public struct HeaderMacro: PeerMacro {
+public struct HeaderMacro: AccessorMacro {
     public static func expansion(
         of node: AttributeSyntax,
-        providingPeersOf declaration: some DeclSyntaxProtocol,
+        providingAccessorsOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
-        // Does nothing, used only to decorate members with data
-        return []
+    ) throws -> [AccessorDeclSyntax] {
+        guard let varDecl = declaration.as(VariableDeclSyntax.self),
+            let binding = varDecl.bindings.first,
+            let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text
+        else {
+            return []
+        }
+
+        return [
+            """
+            get {
+                headers.\(raw: identifier)
+            }
+            """ as AccessorDeclSyntax
+        ]
     }
 }

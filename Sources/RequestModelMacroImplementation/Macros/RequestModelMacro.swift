@@ -35,30 +35,79 @@ extension RequestModelMacro: MemberMacro {
         let headerStruct = makeHeaderDeclSyntas(memberList: memberList)
         let bodyStruct = makeBodyDeclSyntax(memberList: memberList)
         let dictionaryProperties = makeDictionaryProperties()
+        let storageProperties = makeStorageProperties(memberList: memberList)
+        let initializer = makeInitializer(memberList: memberList)
 
         return [
             headerStruct,
             bodyStruct,
             dictionaryProperties.headers,
             dictionaryProperties.body,
+            storageProperties.headers,
+            storageProperties.body,
+            initializer,
         ]
     }
 
-    private static func makeDictionaryProperties() -> (headers: DeclSyntax, body: DeclSyntax) {
+    private static func makeStorageProperties(
+        memberList: MemberBlockItemListSyntax
+    ) -> (headers: DeclSyntax, body: DeclSyntax) {
         let headers = """
-            var headersDictionary: [String: String] { [:] }
+            private var headers: Headers
             """ as DeclSyntax
 
         let body = """
-            var bodyDictionary: [String: Any] { [:] }
+            private var body: Body
             """ as DeclSyntax
 
         return (headers, body)
     }
 
-    static func makeHeaderDeclSyntas(
-        memberList: MemberBlockItemListSyntax
-    ) -> DeclSyntax {
+    private static func makeDictionaryProperties() -> (headers: DeclSyntax, body: DeclSyntax) {
+        let headers = """
+            var headersDictionary: [String: String] {
+                do {
+                    let encoder = JSONEncoder()
+                    let data = try encoder.encode(headers)
+                    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+                    
+                    if let dictionary = jsonObject as? [String: String] {
+                        return dictionary
+                    } else {
+                        assertionFailure("Warning: Failed to cast headers dictionary to [String: String]")
+                        return [:]
+                    }
+                } catch {
+                    print("Warning: Failed to encode headers: \\(error)")
+                    return [:]
+                }
+            }
+            """ as DeclSyntax
+
+        let body = """
+            var bodyDictionary: [String: Any] {
+                do {
+                    let encoder = JSONEncoder()
+                    let data = try encoder.encode(body)
+                    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+                    
+                    if let dictionary = jsonObject as? [String: Any] {
+                        return dictionary
+                    } else {
+                        print("Warning: Failed to cast body dictionary to [String: Any]")
+                        return [:]
+                    }
+                } catch {
+                    assertionFailure("Warning: Failed to encode body: \\(error)")
+                    return [:]
+                }
+            }
+            """ as DeclSyntax
+
+        return (headers, body)
+    }
+
+    static func makeHeaderDeclSyntas(memberList: MemberBlockItemListSyntax) -> DeclSyntax {
         let headersData = extractPropertiesWithAttribute(from: memberList, withAttribute: "Header")
 
         guard !headersData.isEmpty else {
@@ -68,9 +117,7 @@ extension RequestModelMacro: MemberMacro {
         return makeStruct(name: "Headers", with: headersData)
     }
 
-    static func makeBodyDeclSyntax(
-        memberList: MemberBlockItemListSyntax
-    ) -> DeclSyntax {
+    static func makeBodyDeclSyntax(memberList: MemberBlockItemListSyntax) -> DeclSyntax {
         let bodyData = extractPropertiesWithAttribute(from: memberList, withAttribute: "Body")
 
         guard !bodyData.isEmpty else {
@@ -78,6 +125,36 @@ extension RequestModelMacro: MemberMacro {
         }
 
         return makeStruct(name: "Body", with: bodyData)
+    }
+
+    private static func makeInitializer(memberList: MemberBlockItemListSyntax) -> DeclSyntax {
+        let headerProps = extractPropertiesWithAttribute(from: memberList, withAttribute: "Header")
+        let bodyProps = extractPropertiesWithAttribute(from: memberList, withAttribute: "Body")
+
+        let parameters = (headerProps + bodyProps)
+            .map { prop in
+                "\(prop.propertyName): \(prop.type)"
+            }
+            .joined(separator: ", ")
+
+        let headerAssignments =
+            headerProps.map { prop in
+                "\(prop.propertyName): \(prop.propertyName)"
+            }
+            .joined(separator: ", ")
+
+        let bodyAssignments =
+            bodyProps.map { prop in
+                "\(prop.propertyName): \(prop.propertyName)"
+            }
+            .joined(separator: ", ")
+
+        return """
+            init(\(raw: parameters)) {
+                self.headers = Headers(\(raw: headerAssignments))
+                self.body = Body(\(raw: bodyAssignments))
+            }
+            """ as DeclSyntax
     }
 
     private static func extractPropertiesWithAttribute(
@@ -147,7 +224,7 @@ extension RequestModelMacro: MemberMacro {
 
         return """
             enum CodingKeys: String, CodingKey {
-                    \(raw: cases.joined(separator: "\n"))
+                \(raw: cases.joined(separator: "\n    "))
             }
             """ as DeclSyntax
     }

@@ -13,12 +13,13 @@
     named(bodyDictionary),
     named(headers),
     named(body),
-    named(initializer)
+    named(init)
 )
 public macro RequestModel() = #externalMacro(module: "RequestModelMacroImplementation", type: "RequestModelMacro")
 
-@attached(peer)
-public macro Header(_ key: String? = nil) = #externalMacro(module: "RequestModelMacroImplementation", type: "HeaderMacro")
+@attached(accessor)
+public macro Header(_ key: String? = nil) =
+    #externalMacro(module: "RequestModelMacroImplementation", type: "HeaderMacro")
 
-@attached(peer)
+@attached(accessor)
 public macro Body(_ key: String? = nil) = #externalMacro(module: "RequestModelMacroImplementation", type: "BodyMacro")
