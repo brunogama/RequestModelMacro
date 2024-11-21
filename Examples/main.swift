@@ -8,6 +8,11 @@
 import Foundation
 import RequestModelMacro
 
+struct Ham: Codable {
+    var name: String
+    var age: Int
+}
+
 @RequestModel
 struct StartRequest {
     @Header("Authorization")
@@ -16,14 +21,9 @@ struct StartRequest {
     @Header
     var contentType: String
 
-    @Body
-    var fff: String
-
     @Body("Hashed")
     var hashed: Data
 }
 
-let startRequest = StartRequest(token: "Bearer 123", contentType: "application/json", fff: "fff", hashed: Data())
-
-print(startRequest.headersDictionary)
-print(startRequest.bodyDictionary)
+//print(startRequest.headersDictionary)
+//print(startRequest.bodyDictionary)
