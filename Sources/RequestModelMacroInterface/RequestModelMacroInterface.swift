@@ -18,8 +18,7 @@
 public macro RequestModel() = #externalMacro(module: "RequestModelMacroImplementation", type: "RequestModelMacro")
 
 @attached(accessor)
-public macro Header(_ key: String? = nil) =
-    #externalMacro(module: "RequestModelMacroImplementation", type: "HeaderMacro")
+public macro Header(_ key: String? = nil) = #externalMacro(module: "RequestModelMacroImplementation", type: "HeaderMacro")
 
 @attached(accessor)
 public macro Body(_ key: String? = nil) = #externalMacro(module: "RequestModelMacroImplementation", type: "BodyMacro")
