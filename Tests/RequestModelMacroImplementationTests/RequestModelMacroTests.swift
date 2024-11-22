@@ -11,6 +11,95 @@ final class RequestModelMacroTests: XCTestCase {
         "Body": BodyMacro.self,
     ]
     
+    func test_aproperty_with_a_protocol() throws {
+        assertMacroExpansion(
+            """
+            @RequestModel
+            struct BasicRequest {
+                @Header
+                var authorization: CustomStringConvertible
+            }
+            """,
+            expandedSource: """
+            struct BasicRequest {
+                var authorization: String {
+                    get {
+                        headers.authorization
+                    }
+                }
+
+                var message: String {
+                    get {
+                        body.message
+                    }
+                }
+
+                private struct Headers: Codable {
+                    let authorization: String
+
+                    enum CodingKeys: String, CodingKey {
+                        case authorization
+                    }
+                }
+
+                private struct Body: Codable {
+                    let message: String
+
+                    enum CodingKeys: String, CodingKey {
+                        case message
+                    }
+                }
+
+                var headersDictionary: [String: String] {
+                    do {
+                        let encoder = JSONEncoder()
+                        let data = try encoder.encode(headers)
+                        let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+
+                        if let dictionary = jsonObject as? [String: String] {
+                            return dictionary
+                        } else {
+                            print("Warning: Failed to cast headers dictionary to [String: String]")
+                            return [:]
+                        }
+                    } catch {
+                        assertionFailure("Warning: Failed to encode headers: \\(error)")
+                        return [:]
+                    }
+                }
+
+                var bodyDictionary: [String: Any] {
+                    do {
+                        let encoder = JSONEncoder()
+                        let data = try encoder.encode(body)
+                        let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+
+                        if let dictionary = jsonObject as? [String: Any] {
+                            return dictionary
+                        } else {
+                            print("Warning: Failed to cast body dictionary to [String: Any]")
+                            return [:]
+                        }
+                    } catch {
+                        assertionFailure("Warning: Failed to encode body: \\(error)")
+                        return [:]
+                    }
+                }
+
+                private var headers: Headers
+
+                private var body: Body
+
+                init(authorization: String, message: String) {
+                    self.headers = Headers(authorization: authorization)
+                    self.body = Body(message: message)
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+    
     func testBasicRequestModel() {
         assertMacroExpansion(
             """

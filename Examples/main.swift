@@ -8,8 +8,19 @@
 import Foundation
 import RequestModelMacro
 
+//@propertyWrapper struct Capitalized {
+//    var wrappedValue: String {
+//        didSet { wrappedValue = wrappedValue.capitalized }
+//    }
+//
+//    init(wrappedValue: String) {
+//        self.wrappedValue = wrappedValue.capitalized
+//    }
+//}
+
 @RequestModel
 struct StartRequest {
+    
     @Header("Authorization")
     var token: String
 

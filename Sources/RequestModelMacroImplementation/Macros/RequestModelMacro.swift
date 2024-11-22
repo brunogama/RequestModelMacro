@@ -217,7 +217,7 @@ extension RequestModelMacro: MemberMacro {
 
     private static func makeEmptyStruct(name: String) -> DeclSyntax {
         """
-        private struct \(raw: name): Codable {
+        private struct \(raw: name): Encodable {
         }
         """ as DeclSyntax
     }
@@ -230,7 +230,7 @@ extension RequestModelMacro: MemberMacro {
         let codingKeys = makeCodingKeys(from: properties)
 
         return """
-            private struct \(raw: name): Codable {
+            private struct \(raw: name): Encodable {
                 \(raw: structProperties.joined(separator: "\n    "))
 
                 \(raw: codingKeys)
